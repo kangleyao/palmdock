@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">掌坞</string>
+    <string name="settings_title">设置</string>
+    <string name="settings_base_hint">如 http://192.168.x.x:8812</string>
+    <string name="btn_test_notify">发一条测试通知</string>
+    <string name="btn_notify_perm">请求通知权限（Android 13+）</string>
+    <string name="btn_battery">忽略电池优化</string>
+    <string name="sw_boot">开机自启</string>
+</resources>

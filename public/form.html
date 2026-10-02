@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>提交任务</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-page="form">
+  <header class="bar">
+    <a class="topbar-back icon-btn" href="/tools.html" aria-label="返回工具">
+      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <div class="topbar-center">
+      <span class="topbar-title" id="formTitle">提交任务</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn theme-btn" type="button" aria-label="切换主题">
+        <svg class="theme-icon theme-icon-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path class="half" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
+        <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+        <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5 8.6 8.6 0 1 0 20.5 14.3z"/></svg>
+      </button>
+      <button id="tokenBtn" class="icon-btn icon-dots token-btn" type="button" aria-label="设置访问口令">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="connBanner" class="banner conn-banner hidden"></div>
+
+  <main>
+    <p id="formDesc" class="muted"></p>
+    <form id="taskForm"></form>
+    <div id="formErrors" class="errors"></div>
+  </main>
+
+  <dialog id="tokenDialog">
+    <form method="dialog">
+      <p>填写访问口令（只保存在本机浏览器，通过请求头发送，不显示在网址里）。</p>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="访问口令">
+      <menu>
+        <button type="submit" value="save">保存</button>
+        <button type="submit" value="cancel">取消</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>

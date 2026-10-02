@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>会话</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-page="session">
+
+  <!-- 配对视图：未授权时的唯一入口（不渲染列表/表单/横幅） -->
+  <main id="pairingView" class="pairing-view hidden">
+    <form class="pairing-card" id="pairingForm" autocomplete="off">
+      <div class="pairing-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M4.5 13.2l7.5 4.2 7.5-4.2"/></svg>
+      </div>
+      <h1>掌坞</h1>
+      <p class="pairing-desc">在手机上连接电脑，操控这里的 AI 工具与 Agent</p>
+      <input id="pairingInput" type="password" autocomplete="off" placeholder="访问口令" aria-label="访问口令">
+      <div id="pairingError" class="pairing-error hidden"></div>
+      <button id="pairingBtn" class="btn primary" type="submit">连接</button>
+    </form>
+  </main>
+
+  <!-- 列表视图：会话列表壳 -->
+  <main id="sessionListView" class="chat-shell hidden">
+    <header class="bar">
+      <a class="icon-btn" href="/tools.html" aria-label="工具">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.5"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.5"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.5"/><rect x="14" y="14" width="6.5" height="6.5" rx="1.5"/></svg>
+      </a>
+      <div class="topbar-center">
+        <span class="topbar-title">会话</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn theme-btn" type="button" aria-label="切换主题">
+          <svg class="theme-icon theme-icon-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path class="half" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
+          <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+          <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5 8.6 8.6 0 1 0 20.5 14.3z"/></svg>
+        </button>
+        <button class="icon-btn icon-dots token-btn" type="button" aria-label="设置访问口令">
+          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="connBanner" class="banner conn-banner hidden"></div>
+
+    <div class="chat-scroll">
+      <div class="scroll-content">
+        <div class="group-title">新建会话</div>
+        <form id="newSessionForm" class="group-card">
+          <label class="field">
+            <span class="field-label">选择端</span>
+            <select id="newSessionTool" name="toolId"></select>
+          </label>
+          <p class="muted" id="newSessionToolDesc"></p>
+          <button class="btn primary" type="submit" id="newSessionBtn">创建会话</button>
+          <p class="muted hidden" id="newSessionHint"></p>
+        </form>
+
+        <div class="group-title">已有会话</div>
+        <div id="sessionsList" class="group-card"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 详情视图：聊天壳 -->
+  <main id="sessionDetailView" class="chat-shell hidden">
+    <header class="bar">
+      <a class="topbar-back icon-btn" id="toListLink" href="/session.html" aria-label="返回会话列表">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </a>
+      <div class="topbar-center">
+        <span class="topbar-title-row">
+          <span class="topbar-title" id="chatTitle">会话</span>
+          <span id="turnBadge" class="badge badge-pending">…</span>
+        </span>
+        <span class="topbar-sub hidden" id="sessionMeta"></span>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn theme-btn" type="button" aria-label="切换主题">
+          <svg class="theme-icon theme-icon-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path class="half" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
+          <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+          <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5 8.6 8.6 0 1 0 20.5 14.3z"/></svg>
+        </button>
+        <button id="tokenBtn" class="icon-btn icon-dots token-btn" type="button" aria-label="设置访问口令">
+          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="connBannerDetail" class="banner conn-banner hidden"></div>
+
+    <div id="chatScroll" class="chat-scroll">
+      <div id="notifyRow" class="notify-row">
+        <span id="notifyStatus" class="muted"></span>
+        <span id="notifyActions" class="notify-actions"></span>
+      </div>
+      <div id="chatFlow" class="chat-flow"></div>
+    </div>
+
+    <form id="msgForm" class="composer">
+      <textarea id="msgInput" name="message" rows="1" placeholder="随便说点什么…"></textarea>
+      <button class="btn primary send-btn" type="submit" id="sendBtn">发送</button>
+    </form>
+  </main>
+
+  <dialog id="tokenDialog">
+    <form method="dialog">
+      <p>填写访问口令（只保存在本机浏览器，通过请求头发送，不显示在网址里）。</p>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="访问口令">
+      <menu>
+        <button type="submit" value="save">保存</button>
+        <button type="submit" value="cancel">取消</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>

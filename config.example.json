@@ -1,0 +1,7 @@
+{
+  "port": 8787,
+  "bind": "loopback",
+  "dataDir": "data",
+  "maxTasks": 500,
+  "maxConcurrent": 4
+}
