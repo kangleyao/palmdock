@@ -96,7 +96,7 @@ const inputSchema = z.object({
 
 ## 验证“新增不破坏底座”的方法
 
-- 跑 `npm test`（35+ 项，含公共链路回归）。
+- 跑 `npm test`（含公共链路回归；当前测试计数见 `docs/VERIFICATION.md`）。
 - 新增工具过程中，统计自己改动的文件：应当只有 `src/adapters/<your-tool>.ts`（新文件）
   与 `src/registry.ts`（加一行）。若你不得不改其他公共文件，说明契约可能有缺陷，
   请把它写进提交说明并同步更新本文件。
@@ -217,7 +217,7 @@ interface TurnContext {
  
  ### 协议知识的来源（合规边界）
  
-- 协议契约只来自 DSH 产品自身的**公开声明文件**（`@deepseek-ai/dsh` 包内 `lib/types/*.d.ts`，
+- 协议契约只来自 DSH 产品自身的**公开声明文件**（`@deepseek-ai/dsh-host-apiproxy` 的 `lib/types` 声明与各包 README，
   即类型声明而非实现源码）与产品自身可观察的 CLI 帮助。**不读取**任何其他项目源码作为依据。
   **契约稳定性待核实**：包内可见 ≠ 官方对外稳定契约（未见版本化承诺文档），本适配器不把
   它当作稳定 API 对待——已做的只是在**隔离真实实例上实测可调用**（只读级，
@@ -231,12 +231,16 @@ interface TurnContext {
  
  ### 配置
  
-- 服务器地址由环境变量 `DSH_BASE_URL` 提供（必须是回环，如 `http://127.0.0.1:8877`）。
+- 服务器地址由环境变量 `DSH_BASE_URL` 提供（**应为回环地址**，如 `http://127.0.0.1:8877`；适配器本身不校验这一点，回环要求由 DSH 侧的 Host/Origin 信任栅栏实际负责）。
   **未配置时适配器以明确错误失败**（`未配置 DSH 服务器地址…`），不静默降级。
 - 指向真实（用户正式）DSH：用独立实例而非改 8811 主服务——`scripts/serve-dsh.ps1`
   以 WMI 启动 `dsh-instance/`（独立 config.json + 独立 SQLite，端口 8812），env
   `DSH_BASE_URL=http://127.0.0.1:3080`。8811 不受影响。实例只让适配器在
   runTurn 时读取地址；启动本身不发任何写请求。停止实例：终止其监听进程即可（幂等脚本报 already running）。
+  其 `dsh-instance/` 是**本地自建目录**（不在版本库里：其中的 `config.json`、`data/`、日志都被 `.gitignore` 覆盖）。
+  首次使用需自己创建 `dsh-instance/config.json`，四个键即可：`token`（访问口令，可与主服务同一口令）、
+  `bind`（手机访问需 `"lan"`）、`port`（示例 `8812`）、`dataDir`（如 `"data"`）。缺这个文件时
+  `scripts/serve-dsh.ps1` 会直接报错退出。
  
  ### 新增这类端要改的目录（差异隔离的实例）
  

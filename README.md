@@ -24,7 +24,7 @@
 - Node.js（开发环境 v24.20；选用当前受支持版本，不锁死具体次版本号）+ TypeScript（tsc 编译，CommonJS 输出）
 - Express 5（HTTP API + 静态页面）、zod 4（输入契约与校验）
 - better-sqlite3 13（持久化；WAL + synchronous=FULL，单进程事务串行写、原子提交）
-- 前端：五个静态页（会话主页 / 工具 / 表单 / 任务详情 / 入口跳转桩）+ 原生 JS；**会话层用 SSE**（fetch 流式读取 + 通用事件名 hello/change + 注释心跳，无 WebSocket），**任务层保留 HTTP 轮询**；回答正文按**安全 Markdown 渲染成 DOM**（HTML 一律当文本）；提醒用 WebAudio/振动/标题/页内提示条通道，系统通知需 HTTPS（不支持时降级并在页面明确标注）；不依赖仅 HTTPS 可用的浏览器 API
+- 前端：五个静态页（会话主页 / 工具 / 表单 / 任务详情 / 入口跳转桩）+ 原生 JS；**会话层用 SSE**（fetch 流式读取 + 通用事件名 hello/change + 注释心跳；**前端**无 WebSocket——仅 `dsh-agent` 适配器用 WebSocket 连 DSH 的事件通道），**任务层保留 HTTP 轮询**；回答正文按**安全 Markdown 渲染成 DOM**（HTML 一律当文本）；提醒用 WebAudio/振动/标题/页内提示条通道，系统通知需 HTTPS（不支持时降级并在页面明确标注）；不依赖仅 HTTPS 可用的浏览器 API
 - 无动态代码执行、无自动插件扫描：适配器**显式注册**
 
 ## 目录职责
@@ -143,7 +143,7 @@ Agent 命令超时）会把整棵进程树一并终止——表现正是“短�
 这不是应用崩溃。`npm run serve`（= `scripts/serve.ps1`）用 `Win32_Process.Create`（WMI）
 创建进程，它不属于任何命令会话树，因此跨会话常驻。
 
-- **幂等**：端口监听者已是本服务（命令行含 `dist/src/index.js` 且 `/api/health` 200）时直接报
+- **幂等**：端口监听者已是本服务（命令行含 `index.js` 且 `/api/health` 200）时直接报
   “已在运行”，不做二次启动。
 - **日志**：stdout/stderr 全量重定向到项目根 `server.log`；进程内未捕获异常/未处理拒绝会先写明
   日志再优雅退出（`src/index.ts` 的 `uncaughtException`/`unhandledRejection`/exit 处理器）。
@@ -176,7 +176,7 @@ Agent 命令超时）会把整棵进程树一并终止——表现正是“短�
   新适配器须由人审阅后放入 `src/adapters/` 并显式注册。底座不在运行中加载未经确认的代码。
 - 目录类示例工具只允许读固定白名单 `data/listing-root`，不接受任意路径输入。
 - 输入上限 16KB、结果上限 64KB（超限截断并存证）、单任务事件上限 200 条、终态记录上限 `maxTasks`（默认 500），
-  并发上限默认 4，请求体上限 64KB。
+  并发上限默认 4（**任务层与会话层各自一个**），请求体上限 64KB。
 - token 不硬编码、不进 URL/日志/仓库（config.json 已 .gitignore）；工具输出与端回答正文按**安全 Markdown**
   渲染成 DOM（HTML 一律当文本，绝不直接作为 HTML 注入）。
 - 暂不做：暂停/取消轮次、PWA、多用户/细粒度权限、插件市场、任务层 SSE（会话层已具备）、系统级推送（关闭浏览器后仍能收到通知，需要公网服务）。

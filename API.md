@@ -37,7 +37,7 @@ Invoke-RestMethod "http://127.0.0.1:8811/api/sessions?limit=20" -Headers $H | Co
 | 单字段上限 | 见各端点；输入总上限 `maxInputBytes = 16384`，比较的是 `JSON.stringify(...).length` —— **是字符数，不是字节数**（一个中文算 1） |
 | 时间格式 | ISO 8601 UTC 字符串，例 `2026-10-02T10:01:07.800Z`；未发生的时刻为 `null` |
 | 幂等 | 只有 `POST /api/tasks` 与 `POST /api/sessions/{id}/messages` **必须**带 `idempotencyKey`（1–100 字符）：同键同参 → 重放原结果（200 + `idempotentReplay:true`），同键异参 → 409 `IDEMPOTENCY_CONFLICT`。`POST /api/sessions`（建会话）与 `.../answer`（回答）**不带键**：前者每次调用都新建会话，后者的幂等按"同一回答重复提交"判定 |
-| 并发 | 全局 `maxConcurrent = 4`（实例值）；**每个会话同时最多一个活跃轮次** |
+| 并发 | **任务层与会话层各自一个** `maxConcurrent = 4`（实例值，两层独立计数）；**每个会话同时最多一个活跃轮次** |
 | 长任务语义 | 创建即返回，不等执行完毕；**HTTP 超时 ≠ 没创建**（先查列表再决定是否重发） |
 | 内容安全 | 所有文本按纯文本处理；客户端渲染一律用 `textContent`（不得拼接 HTML） |
 | 稳定性 | 字段只增不减；新增能力走 `capabilities` 声明，客户端遇到未知值应忽略而非崩溃 |
@@ -74,7 +74,7 @@ Invoke-RestMethod "http://127.0.0.1:8811/api/sessions?limit=20" -Headers $H | Co
 ### 3.2 `GET /api/tools`
 ```jsonc
 { "tools": [ { "id": "dsh-agent", "name": "…", "description": "…",
-               "timeoutMs": 600000,                       // 可能不存在
+               "timeoutMs": 300000,                       // 可能不存在
                "fields": [ { "name":"prompt","label":"…","type":"textarea",
                              "required":true,"placeholder":"…",
                              "options":["a","b"], "help":"…" } ], // options/help 可能不存在
@@ -123,7 +123,7 @@ Invoke-RestMethod "http://127.0.0.1:8811/api/sessions?limit=20" -Headers $H | Co
 ### 3.9 `POST /api/sessions/{id}/messages`
 请求：`{ "message": string(1–2000), "idempotencyKey": string(1–100) }`
 成功：`201 { "turn": TurnRecord }`；幂等重放：`200 { …, "idempotentReplay": true }`
-错误：`400 INVALID_INPUT`、`400 INPUT_TOO_LARGE`、`404 SESSION_NOT_FOUND`、`409 SESSION_BUSY`（`existingTurnId` 指明占用的那轮）、`409 IDEMPOTENCY_CONFLICT`、`409 SESSIONS_NOT_SUPPORTED`（该端已不支持会话）
+错误：`400 INVALID_INPUT`、`404 SESSION_NOT_FOUND`、`409 SESSION_BUSY`（`existingTurnId` 指明占用的那轮）、`409 IDEMPOTENCY_CONFLICT`、`409 SESSIONS_NOT_SUPPORTED`（该端已不支持会话）
 
 ### 3.10 `POST /api/sessions/{id}/turns/{turnId}/answer`
 请求：`{ "answer": string(1–200) }` —— **必须是 `pendingQuestion.options` 里的一项**
@@ -275,7 +275,7 @@ data: { …snapshot… }
 |---|---|---|---|
 | 400 | `INVALID_INPUT` | 请求体字段缺失/超长/非 JSON（zod 校验失败时带 `details[]`，解析层失败时不带） | 按 `details[].path` 修正 |
 | 413 | `INVALID_INPUT` | 请求体超过 64 KB（Express JSON 解析上限） | 拆小请求；单条消息自身上限 2000 字符 |
-| 400 | `INPUT_TOO_LARGE` | 输入/消息超 `maxInputBytes = 16384`（按 JSON 字符串**字符数**比较，不是字节数） | 截短后重发 |
+| 400 | `INPUT_TOO_LARGE` | 任务输入超 `maxInputBytes = 16384`（按 JSON 字符串**字符数**比较，不是字节数）；会话消息另有 1–2000 字符上限，不会触发此错误 | 截短后重发 |
 | 400 | `INVALID_ANSWER` | 回答不在 `options` 内 | 用返回的 `options[]` 重选 |
 | 400 | `TOOL_MODE_MISMATCH` | 会话形态工具被当一次性任务提交 | 走 `/session.html` |
 | 401 | `UNAUTHORIZED` | 缺/错 token | 重新配对；别在 URL 里带 token |
