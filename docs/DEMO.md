@@ -62,7 +62,7 @@ AI 助手的内部推理过程实时显示——底座只呈现端的对外事�
 
 ## 从零安装与测试（可复现命令，已实测）
 
-以下 4 组对照在本机实测过两遍（主项目与纯源码副本，Node v24.20.0 / npm 11.19.0）：
+以下 4 组对照在开发机上实测过两遍（主项目与纯源码副本，Node v24.20.0 / npm 11.19.0）：
 
 1. 空目录只有 `package.json` + `tsconfig.json`（**无 `package-lock.json`**）时，`npm install --no-audit --no-fund`
    **成功**（`added 85 packages in 8s`），`require('better-sqlite3')` 正常。
@@ -97,7 +97,7 @@ AI 助手的内部推理过程实时显示——底座只呈现端的对外事�
 
 ## 一致性核对清单
 
-- 脚本存在且与启动方式一致：`scripts/serve.ps1`（8811）、`scripts/serve-dsh.ps1`（8812）
+- 脚本存在且与启动方式一致：`scripts/serve.ps1`（端口取自 `config.json` 的 `port`，本文示例实例为 8811）、`scripts/serve-dsh.ps1`（示例实例为 8812）
 - 健康端点 `/api/health`、工具清单 `/api/tools`（鉴权头）、会话主页 `/session.html`、工具页 `/tools.html`、入口跳转桩 `/`（→ `/session.html`）
 - 适配器目录即 `src/adapters/`；公共页面在 `public/`
 - 本文档不含 token、会话 ID、私人对话内容；示例均为结构性事实或可复现命令。

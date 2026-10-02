@@ -21,7 +21,7 @@
 
 ## 技术选型
 
-- Node.js（当前机器 v24.20，选当前受支持版本，不锁死具体次版本号）+ TypeScript（tsc 编译，CommonJS 输出）
+- Node.js（开发环境 v24.20；选用当前受支持版本，不锁死具体次版本号）+ TypeScript（tsc 编译，CommonJS 输出）
 - Express 5（HTTP API + 静态页面）、zod 4（输入契约与校验）
 - better-sqlite3 13（持久化；WAL + synchronous=FULL，单进程事务串行写、原子提交）
 - 前端：五个静态页（会话主页 / 工具 / 表单 / 任务详情 / 入口跳转桩）+ 原生 JS；**会话层用 SSE**（fetch 流式读取 + 通用事件名 hello/change + 注释心跳，无 WebSocket），**任务层保留 HTTP 轮询**；回答正文按**安全 Markdown 渲染成 DOM**（HTML 一律当文本）；提醒用 WebAudio/振动/标题/页内提示条通道，系统通知需 HTTPS（不支持时降级并在页面明确标注）；不依赖仅 HTTPS 可用的浏览器 API
