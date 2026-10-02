@@ -95,7 +95,7 @@ AI 助手的内部推理过程实时显示——底座只呈现端的对外事�
   断线不丢已显示内容，重连后 `sinceSeq` 续传；服务重启未终结轮次标记 `interrupted`（不重跑、不伪称结果）。
 - **每会话单活轮次**：进行中再发消息返回 `409 SESSION_BUSY`，页面提示先回答或等待。
 
-## 一致性核对清单（写文档时复核过）
+## 一致性核对清单
 
 - 脚本存在且与启动方式一致：`scripts/serve.ps1`（8811）、`scripts/serve-dsh.ps1`（8812）
 - 健康端点 `/api/health`、工具清单 `/api/tools`（鉴权头）、会话主页 `/session.html`、工具页 `/tools.html`、入口跳转桩 `/`（→ `/session.html`）

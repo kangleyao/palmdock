@@ -29,7 +29,7 @@ android-shell/
 
 ## 打包
 
-要求：JDK 21（keytool/javac）+ Android SDK 的构建工具（已指定固定路径，可在 `build.ps1` 参数里改）。
+要求：JDK 21（keytool/javac）+ Android SDK 的构建工具（用 `-AndroidJar` / `-BuildTools` 参数，或环境变量 `ANDROID_SDK` 指定，见 `build.ps1` 头部用法）。
 
 ```powershell
 cd android-shell
