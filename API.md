@@ -4,7 +4,7 @@
 **给适配者**（把新端接进来）看的是 [`ADAPTERS.md`](ADAPTERS.md)。两者是同一套机制的生产侧与消费侧。
 
 > **本页怎么来的**：逐行取自源码（`src/api.ts`、`src/session-api.ts`、`src/session-stream.ts`、`src/types.ts`、`src/store.ts`、`src/config.ts`），
-> 并对**运行中的实例**（`http://127.0.0.1:8812`）实测校对过响应字段与错误码。凡未实测者会显式标注。
+> 并对**运行中的实例**实测校对过响应字段与错误码。凡未实测者会显式标注。
 > 目标：**照着这一页就能写出客户端，不需要读源码、不需要猜。**
 
 ---
@@ -12,7 +12,7 @@
 ## 0. 三十秒版
 
 ```
-基址：http://<主机>:<端口>            本机示例 http://127.0.0.1:8812
+基址：http://<主机>:<端口>            本机示例 http://127.0.0.1:8811
 鉴权：Authorization: Bearer <token>   唯一例外：GET /api/health
 取数：GET  /api/sessions              列会话（含末轮状态/时间，足以判断"该不该提醒"）
 发话：POST /api/sessions/{id}/messages   {"message":"...","idempotencyKey":"<唯一串>"}
@@ -21,7 +21,7 @@
 
 ```powershell
 $H = @{ Authorization = "Bearer $env:BASE_TOKEN" }
-Invoke-RestMethod "http://127.0.0.1:8812/api/sessions?limit=20" -Headers $H | ConvertTo-Json -Depth 4
+Invoke-RestMethod "http://127.0.0.1:8811/api/sessions?limit=20" -Headers $H | ConvertTo-Json -Depth 4
 ```
 
 ---
@@ -313,7 +313,7 @@ data: { …snapshot… }
 <summary>PowerShell：列出会话并打印"需要提醒"的</summary>
 
 ```powershell
-$base  = "http://127.0.0.1:8812"
+$base  = "http://127.0.0.1:8811"
 $token = $env:BASE_TOKEN            # 不要写死在脚本里
 $h     = @{ Authorization = "Bearer $token" }
 $sessions = (Invoke-RestMethod "$base/api/sessions?limit=20" -Headers $h).sessions

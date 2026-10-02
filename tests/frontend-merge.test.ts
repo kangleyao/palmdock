@@ -36,7 +36,7 @@ const sandbox = loadFrontendSandbox();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fn = sandbox as any;
 
-// 真实形状的对照数据（按验收方在会话 21dde800 上直连 SSE 读到的分布等比例缩写）：
+// 真实形状的对照数据（按一次真实会话直连 SSE 读到的事件分布等比例缩写）：
 // T1=3 条（seq 1..3）、T2=4 条（seq 4..7，其中 seq 7 是 T2 的 AI 回答正文）、T3=6 条（seq 8..13）
 interface EvShape {
   seq: number; type: string; message: string; percent: null; createdAt: string;

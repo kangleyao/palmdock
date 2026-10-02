@@ -76,7 +76,7 @@ cd android-shell
 
 ## 已知限制
 
-- **未在真机验证**（ utmost：本机无 Android 设备；仅做了构建、签名校验、badging/xmltree 核对与服务端 API 只读冒烟）。装上后的实际提醒表现需要你在真机上确认。
+- **未在真机验证**（本机无 Android 设备；仅做了构建、签名校验、badging/xmltree 核对与服务端 API 只读冒烟）。装上后的实际提醒表现需要你在真机上确认。
 - 必须与电脑**在同一 Wi-Fi**：壳直接连局域网地址；**不做公网推送/穿透**。
 - 后台稳定依赖系统不杀进程：**建议加电池白名单**（设置里有按钮）；`onTaskRemoved`/`START_STICKY` 只是尽力自启，国产 ROM 的后台管理可能仍杀。
 - 明文 HTTP：`usesCleartextTraffic` 是因为服务端是 HTTP；系统通知/前台服务在明文下可用，但流量不加密——仅限可信局域网。

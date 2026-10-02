@@ -1795,7 +1795,7 @@ function loadSessionDetailView(sessionId) {
     if (!(opts && opts.fromCache)) cacheApplied = false; // 服务器快照已到达并渲染：后续断线不再按“缓存内容”提示
     chatTitle.textContent = toolNames[session.toolId] || session.toolId;
     shownToolId = session.toolId || shownToolId;
-    // 实时流被降级为兼容连接时，副标题如实标注（R8 重写时该行被误删，本轮补回并改人话）
+    // 实时流被降级为兼容连接时，副标题显示降级提示
     setMeta(streamDemoted ? "兼容连接（实时通道不可用）" : "");
 
     var turns = (data && data.turns) || [];
