@@ -11,7 +11,7 @@
 ```powershell
 # 在仓库根目录下执行（以下命令均在此目录）
 # 1) 主服务（常驻；如未运行）
-npm run serve                 # WMI 独立进程，端口 8811
+npm run serve                 # WMI 独立进程；端口取自 config.json 的 port（本文示例实例为 8811）
 # 2) 指向真实 DSH 的独立实例（如未运行；可选，仅演示 dsh-agent 时需要）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\serve-dsh.ps1
 #   以 WMI 启动 dsh-instance\（独立配置与数据，端口 8812，DSH_BASE_URL=http://127.0.0.1:3080）

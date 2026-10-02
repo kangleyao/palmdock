@@ -2,6 +2,7 @@
   "name": "palmdock",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "palmdock（掌坞）：供 AI 按需适配的通用手机任务底座（公共页面/通信/鉴权/任务展示可复用，差异集中在适配器）",
   "main": "dist/src/index.js",
   "scripts": {

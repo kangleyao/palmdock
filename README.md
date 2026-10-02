@@ -4,7 +4,7 @@
 >
 > ⚠️ **这是演示项目，不是可部署产品**：单人单机、明文局域网 HTTP、单一固定 token、无多用户/权限分级、无公网推送；**不要直接暴露到公网**。
 >
-> **30 秒上手**：`npm install --ignore-scripts` → `npm run token` → 配置 `config.json` 的 `bind=lan` → `npm start`
+> **30 秒上手**：`npm install --ignore-scripts` → `npm run build` → `npm run token` → 按 `config.example.json` 配置 `config.json`（手机访问需 `"bind": "lan"`）→ `npm start`
 >
 > **文档地图**：`ADAPTERS.md`（接新端 / 生产侧）· `API.md`（写客户端 / 消费侧契约）· `docs/DEMO.md`（演示指南）· `docs/VERIFICATION.md`（验证状态与已知缺口）
 
@@ -14,8 +14,10 @@
 目标工具的差异集中在 `src/adapters/` 下的适配器。新增受支持工具 = 写一个适配器 + 在注册表加一行，
 不必重写公共页面、通信与鉴权。
 
-> 本仓库是**底座**，不是完整远程 Coding Agent 产品。当前用两个接口不同的**普通确定性工具**做阶段性验证，
-> 不代表已完成真实 Agent 接入或最终 Demo。
+> 本仓库是**底座**，不是完整的远程 Coding Agent 产品：公共层（页面、通信、鉴权、会话与任务机制）是成品，
+> 目标端的差异全部落在 `src/adapters/`。仓库内附示例端：一次性任务端（文本统计 / 目录清单 / 端砚 MCP 只读查询）
+> 与会话端（本地演示助手 `fake-ai`、按 DSH `/api` 协议接入真实 DeepSeek Harness 的 `dsh-agent`）。
+> 接你自己的端只需新增一个适配器，见 `ADAPTERS.md`。
 
 ## 技术选型
 
@@ -58,8 +60,6 @@
 | `public/session.html` | 会话主页（应用入口）：未授权配对卡；列表视图（会话列表 + 新建会话）+ 聊天详情（消息输入 + SSE 流式事件 + 二选一问答 + 通知行 + 历史轮次） |
 | `public/tools.html` | 工具页（二级）：一次性任务端分区，按能力展示入口 |
 | `public/index.html` | 入口跳转桩：统一跳转到 `/session.html` |
-
-
 | `src/tools/gentoken.ts` | 生成 token 写入 config.json（`npm run token`） |
 | `public/` | 公共手机网页（会话主页 / 工具 / 表单 / 任务详情 / 入口跳转桩） |
 | `tests/` | 全部测试（见下） |
@@ -128,12 +128,12 @@ running 不因超时变状态           （超时只打 timeoutMarkedAt + 系统
 ## 启动与测试
 
 ```bash
-npm install --ignore-scripts  # 安装依赖。带 lock 时 npm 会对 better-sqlite3 触发 node-gyp rebuild（包内无 install 脚本、npm 的 binding.gyp 兜底），本机无 VS C++ 工具链会失败；该依赖集无需要本地编译的包，忽略脚本后使用 tarball 自带的预编译二进制（机制未查明，见 docs/DEMO.md「从零安装与测试」）
+npm install --ignore-scripts  # 必须带该参数：带 lock 安装时 npm 会尝试对 better-sqlite3 走 node-gyp 构建，无 VS C++ 工具链的机器会失败；该依赖集没有需要本地编译的包，预编译二进制随 tarball 提供（可复现记录见 docs/DEMO.md「从零安装与测试」）
 npm run token          # 生成随机 token 写入 config.json（不在控制台打印）
 npm run build          # tsc 编译到 dist/
 npm start              # 前台启动服务（依赖当前终端，终端关闭进程即被树终止）
 npm run serve          # Windows：以独立进程常驻启动（WMI 创建，不依赖当前会话）
- npm test               # 编译 + 跑全部测试（137 项，见下）
+npm test               # 编译并运行全部测试（计数与明细见 docs/VERIFICATION.md）
 ```
 
 ### Windows 独立常驻启动（`npm run serve`）
@@ -148,7 +148,7 @@ Agent 命令超时）会把整棵进程树一并终止——表现正是“短�
 - **日志**：stdout/stderr 全量重定向到项目根 `server.log`；进程内未捕获异常/未处理拒绝会先写明
   日志再优雅退出（`src/index.ts` 的 `uncaughtException`/`unhandledRejection`/exit 处理器）。
   被外部强杀（任务管理器/树终止）时进程无法自我记录——那属于启动机制问题，重跑 `npm run serve` 即可。
-- **停止**：`Stop-Process -Id <listener pid>`（pid 见启动输出或 `netstat -ano | findstr :8811`）。
+- **停止**：`Stop-Process -Id <listener pid>`（pid 见启动输出或 `netstat -ano | findstr :<端口>`；端口为 `config.json` 的 `port`，默认 8787）。
 - 注意：`.ps1` 含中文注释，以 **UTF-8 with BOM** 保存；Windows PowerShell 5.1 对无 BOM 的 UTF-8
   会按本地 ANSI 解码，乱码字节会破坏 `param()` 默认值（`$Log` 变空 → 重定向目标拼出空文件名）。
 
@@ -163,7 +163,7 @@ Agent 命令超时）会把整棵进程树一并终止——表现正是“短�
 ## 默认网络暴露与手机访问
 
 - **默认 `bind=loopback`**（127.0.0.1）= 最小暴露；此时手机访问不到。
-- 同 Wi-Fi 测试：`config.json` 设 `"bind": "lan"` → 监听 0.0.0.0，手机打开 `http://电脑局域网IP:8811`，
+- 同 Wi-Fi 测试：`config.json` 设 `"bind": "lan"` → 监听 0.0.0.0，手机打开 `http://电脑局域网IP:<端口>`（端口为 `config.json` 的 `port`，默认 8787），
   未授权先显示配对卡，填访问口令（仅存本机浏览器 localStorage，经请求头发送）后进入会话主页。
 - 跨网（出门在外）：见 `docs/CLOUDFLARE-TUNNEL.md`（固定域名隧道；**本文档仅为配置说明，未实际配置与实测**）。
 
@@ -179,6 +179,6 @@ Agent 命令超时）会把整棵进程树一并终止——表现正是“短�
   并发上限默认 4，请求体上限 64KB。
 - token 不硬编码、不进 URL/日志/仓库（config.json 已 .gitignore）；工具输出与端回答正文按**安全 Markdown**
   渲染成 DOM（HTML 一律当文本，绝不直接作为 HTML 注入）。
-- 暂不做：暂停/取消轮次、PWA、多用户/细粒度权限、插件市场、任务层 SSE（会话层已具备）；Android 原生通知壳（仓库附带示例客户端 `android-shell/`，真机未验证）。
+- 暂不做：暂停/取消轮次、PWA、多用户/细粒度权限、插件市场、任务层 SSE（会话层已具备）、系统级推送（关闭浏览器后仍能收到通知，需要公网服务）。
 - 单实例写同一数据库（多进程写同一库不受支持）。
 
