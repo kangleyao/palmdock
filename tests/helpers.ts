@@ -6,7 +6,8 @@ import * as http from "node:http";
 import type { Express } from "express";
 import { Store } from "../src/store";
 import { TaskRunner } from "../src/runner";
-import * as registry from "../src/registry";
+import { createRegistry, defaultRegistry } from "../src/registry";
+import { fakeAiAdapter } from "../src/adapters/fake-ai";
 import { SessionRunner } from "../src/session-runner";
 import { TurnBus } from "../src/turn-bus";
 import { SessionStreamHub } from "../src/session-stream";
@@ -15,6 +16,9 @@ import { createApp } from "../src/server";
 import { DEFAULT_LIMITS, Limits } from "../src/types";
 
 import type { Adapter } from "../src/types";
+
+/** 测试注册表：产品端清单之外显式追加演示助手（fake-ai）——它不在产品端清单里，仅作测试替身与参照样例。 */
+const testRegistry = createRegistry([...defaultRegistry.getAllAdapters(), fakeAiAdapter]);
 
 export interface TestEnv {
   store: Store;
@@ -54,16 +58,16 @@ export async function startTestEnv(opts?: {
   const limits = testLimits(opts?.limits);
   const runner = new TaskRunner({
     store,
-    getAdapter: opts?.getAdapter ?? registry.getAdapter,
+    getAdapter: opts?.getAdapter ?? testRegistry.getAdapter,
     limits,
   });
   const sessionRunner = new SessionRunner({
     store,
-    getSessionAdapter: registry.getSessionAdapter,
+    getSessionAdapter: testRegistry.getSessionAdapter,
     limits,
   });
   const turnHub = new SessionStreamHub(store, turnBus);
-  const app = createApp({ store, onTaskCreated: (id) => runner.enqueue(id), sessionRunner, turnHub, limits, token });
+  const app = createApp({ store, onTaskCreated: (id) => runner.enqueue(id), sessionRunner, turnHub, limits, token, registry: testRegistry });
 
 
   return new Promise((resolve) => {

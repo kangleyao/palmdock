@@ -5,7 +5,8 @@ import express from "express";
 import { z } from "zod";
 import { bearerAuth } from "./auth";
 import { logger } from "./logger";
-import { publicManifests, getAdapter } from "./registry";
+import { defaultRegistry } from "./registry";
+import type { Registry } from "./registry";
 import { paramsHashOf } from "./runner";
 import type { JsonValue, Limits, TaskRecord, EventRecord } from "./types";
 import type { Store } from "./store";
@@ -23,9 +24,12 @@ export interface ApiDeps {
   onTaskCreated: (taskId: string) => void;
   limits: Limits;
   token: string;
+  /** 适配器注册表视图：默认为产品端清单；测试可注入含测试替身的注册表。 */
+  registry?: Registry;
 }
 
 export function createApiRouter(deps: ApiDeps): express.Router {
+  const registry = deps.registry ?? defaultRegistry;
   const router = express.Router();
   router.use(express.json({ limit: "64kb" }));
 
@@ -37,7 +41,7 @@ export function createApiRouter(deps: ApiDeps): express.Router {
   router.use(bearerAuth(deps.token));
 
   router.get("/tools", (_req, res) => {
-    res.json({ tools: publicManifests() });
+    res.json({ tools: registry.publicManifests() });
   });
 
   router.post("/tasks", (req, res) => {
@@ -52,7 +56,7 @@ export function createApiRouter(deps: ApiDeps): express.Router {
     }
     const { toolId, idempotencyKey, input } = parsed.data;
 
-    const adapter = getAdapter(toolId);
+    const adapter = registry.getAdapter(toolId);
     if (!adapter) {
       res.status(404).json({ error: "UNKNOWN_TOOL", message: `工具 ${toolId} 未注册` });
       return;

@@ -3,11 +3,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { getAllAdapters, validateManifestFields } from "../src/registry";
+import { fakeAiAdapter } from "../src/adapters/fake-ai";
 import { fieldsFor } from "../src/schema-fields";
 import { DEFAULT_LIMITS } from "../src/types";
 import type { Adapter, AdapterContext, FieldDef } from "../src/types";
 
-const adapters: Adapter[] = getAllAdapters();
+// 契约范围 = 产品端清单 + 演示助手（fake-ai 不在产品端清单里，由测试显式纳入自检）。
+const adapters: Adapter[] = [...getAllAdapters(), fakeAiAdapter];
 
 if (adapters.length === 0) {
   test("至少存在一个已注册适配器", () => {
@@ -44,7 +46,7 @@ for (const adapter of adapters) {
       }
       assert.equal(typeof f.required, "boolean");
     }
-    const problems = validateManifestFields();
+    const problems = validateManifestFields(adapters);
     assert.deepEqual(problems, [], "全部适配器清单自检通过");
   });
 

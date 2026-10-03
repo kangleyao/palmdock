@@ -7,6 +7,7 @@ import type { SessionRunner } from "./session-runner";
 import type { SessionStreamHub } from "./session-stream";
 import type { Store } from "./store";
 import type { Limits } from "./types";
+import type { Registry } from "./registry";
 
 export interface ServerDeps {
   store: Store;
@@ -18,6 +19,8 @@ export interface ServerDeps {
   token: string;
   /** 静态页面目录；默认为项目 public/。 */
   publicDir?: string;
+  /** 适配器注册表视图：默认为产品端清单（defaultRegistry）；测试可注入含测试替身的注册表。 */
+  registry?: Registry;
 }
 
 export function createApp(deps: ServerDeps): express.Express {
@@ -36,7 +39,7 @@ export function createApp(deps: ServerDeps): express.Express {
   });
   // 顺序很重要：任务路由先挂（/api/health 免鉴权在它的路由级处理），
   // 会话路由后挂；二者路径不重叠，健康检查不被会话鉴权拦截。
-  app.use("/api", createApiRouter({ store: deps.store, onTaskCreated: deps.onTaskCreated, limits: deps.limits, token: deps.token }));
+  app.use("/api", createApiRouter({ store: deps.store, onTaskCreated: deps.onTaskCreated, limits: deps.limits, token: deps.token, registry: deps.registry }));
 
   app.use(
     "/api",
@@ -46,6 +49,7 @@ export function createApp(deps: ServerDeps): express.Express {
       limits: deps.limits,
       token: deps.token,
       hub: deps.turnHub,
+      registry: deps.registry,
     })
   );
 

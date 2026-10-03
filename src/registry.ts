@@ -6,19 +6,20 @@ import { textStatsAdapter } from "./adapters/text-stats";
 import { dirListingAdapter } from "./adapters/dir-listing";
 import { inkstoneMcpAdapter } from "./adapters/inkstone-mcp";
 import { inkstoneBiorxivCategoriesAdapter } from "./adapters/inkstone-biorxiv-categories";
-import { fakeAiAdapter } from "./adapters/fake-ai";
 import { dshAgentAdapter } from "./adapters/dsh-agent";
 
-/** 注册表：新增工具 = 新适配器文件 + 在此数组加一行。 */
+/**
+ * 产品端清单：新增工具 = 新适配器文件 + 在此数组加一行。
+ * 演示助手（fake-ai）不在此列：它是内部测试替身与适配参照样例，
+ * 由测试环境显式注册进自己的注册表（见 tests/helpers.ts）。
+ */
 const ADAPTERS: Adapter[] = [
   textStatsAdapter,
   dirListingAdapter,
   inkstoneMcpAdapter,
   inkstoneBiorxivCategoriesAdapter,
-  fakeAiAdapter,
   dshAgentAdapter,
 ];
-const byId = new Map<string, Adapter>(ADAPTERS.map((a) => [a.manifest.id, a]));
 
 export interface PublicManifest {
   id: string;
@@ -32,12 +33,63 @@ export interface PublicManifest {
   capabilities: AdapterCapabilities;
 }
 
+/**
+ * 注册表视图：按显式清单构造。
+ * 生产用默认清单（defaultRegistry）；测试可追加测试替身构造自己的注册表，
+ * 与产品端清单互不影响。
+ */
+export interface Registry {
+  getAllAdapters(): Adapter[];
+  getAdapter(toolId: string): Adapter | undefined;
+  getSessionAdapter(toolId: string): SessionAdapter | undefined;
+  publicManifests(): PublicManifest[];
+}
+
+export function createRegistry(adapters: Adapter[]): Registry {
+  const byId = new Map<string, Adapter>(adapters.map((a) => [a.manifest.id, a]));
+  const getSessionAdapter = (toolId: string): SessionAdapter | undefined => {
+    const adapter = byId.get(toolId);
+    if (!adapter) return undefined;
+    if (capabilitiesOf(adapter).sessions !== true) return undefined;
+    if (typeof (adapter as SessionAdapter).runTurn !== "function") return undefined;
+    return adapter as SessionAdapter;
+  };
+  return {
+    getAllAdapters: () => adapters,
+    getAdapter: (toolId) => byId.get(toolId),
+    getSessionAdapter,
+    publicManifests: () =>
+      adapters.map((a) => ({
+        id: a.manifest.id,
+        name: a.manifest.name,
+        description: a.manifest.description,
+        ...(a.manifest.timeoutMs !== undefined ? { timeoutMs: a.manifest.timeoutMs } : {}),
+        fields: a.manifest.fields,
+        mode: (a.manifest.mode ?? "task") as ToolMode,
+        capabilities: capabilitiesOf(a),
+      })),
+  };
+}
+
+/** 生产装配的默认注册表：仅含产品端清单（ADAPTERS）。 */
+export const defaultRegistry: Registry = createRegistry(ADAPTERS);
+
+// 具名导出：默认注册表的薄委托，保持既有调用方（src/index.ts、契约测试等）不变。
 export function getAllAdapters(): Adapter[] {
-  return ADAPTERS;
+  return defaultRegistry.getAllAdapters();
 }
 
 export function getAdapter(toolId: string): Adapter | undefined {
-  return byId.get(toolId);
+  return defaultRegistry.getAdapter(toolId);
+}
+
+/** 会话型适配器发现：声明 sessions 能力且实现了 runTurn，才被视为第二层端。 */
+export function getSessionAdapter(toolId: string): SessionAdapter | undefined {
+  return defaultRegistry.getSessionAdapter(toolId);
+}
+
+export function publicManifests(): PublicManifest[] {
+  return defaultRegistry.publicManifests();
 }
 
 /** 规范化能力声明：缺省项一律 false（不支持即明确标记为不支持）。 */
@@ -51,32 +103,11 @@ export function capabilitiesOf(adapter: Adapter): AdapterCapabilities {
   };
 }
 
-/** 会话型适配器发现：声明 sessions 能力且实现了 runTurn，才被视为第二层端。 */
-export function getSessionAdapter(toolId: string): SessionAdapter | undefined {
-  const adapter = byId.get(toolId);
-  if (!adapter) return undefined;
-  if (capabilitiesOf(adapter).sessions !== true) return undefined;
-  if (typeof (adapter as SessionAdapter).runTurn !== "function") return undefined;
-  return adapter as SessionAdapter;
-}
-
-export function publicManifests(): PublicManifest[] {
-  return ADAPTERS.map((a) => ({
-    id: a.manifest.id,
-    name: a.manifest.name,
-    description: a.manifest.description,
-    ...(a.manifest.timeoutMs !== undefined ? { timeoutMs: a.manifest.timeoutMs } : {}),
-    fields: a.manifest.fields,
-    mode: (a.manifest.mode ?? "task") as ToolMode,
-    capabilities: capabilitiesOf(a),
-  }));
-}
-
 /** 供契约测试与启动自检：字段与 schema 一致性、形态与能力声明一致性预检。 */
-export function validateManifestFields(): string[] {
+export function validateManifestFields(adapters: Adapter[] = ADAPTERS): string[] {
   const problems: string[] = [];
   const seenIds = new Set<string>();
-  for (const adapter of ADAPTERS) {
+  for (const adapter of adapters) {
     const { manifest } = adapter;
     if (seenIds.has(manifest.id)) problems.push(`工具 id 重复：${manifest.id}`);
     seenIds.add(manifest.id);

@@ -6,7 +6,8 @@ import express from "express";
 import { z } from "zod";
 import { bearerAuth } from "./auth";
 import { logger } from "./logger";
-import { getSessionAdapter, capabilitiesOf } from "./registry";
+import { capabilitiesOf, defaultRegistry } from "./registry";
+import type { Registry } from "./registry";
 import type { SessionRecord, TurnRecord, TurnStatus } from "./types";
 import type { Store } from "./store";
 import { SessionBusyError, StoreError } from "./store";
@@ -33,6 +34,8 @@ export interface SessionApiDeps {
   token: string;
   /** 会话 SSE 推流中心（第二层公共传输层；不传则 stream 端点不可用）。 */
   hub?: SessionStreamHub;
+  /** 适配器注册表视图：默认为产品端清单；测试可注入含测试替身的注册表。 */
+  registry?: Registry;
 }
 
 function sessionToJson(s: SessionRecord) {
@@ -60,6 +63,7 @@ function turnToJson(t: TurnRecord) {
 const LIVE_STATUSES: TurnStatus[] = ["pending", "streaming", "awaiting_answer", "answered"];
 
 export function createSessionRouter(deps: SessionApiDeps): express.Router {
+  const registry = deps.registry ?? defaultRegistry;
   const router = express.Router();
   router.use(express.json({ limit: "64kb" }));
   router.use(bearerAuth(deps.token));
@@ -76,7 +80,7 @@ export function createSessionRouter(deps: SessionApiDeps): express.Router {
       return;
     }
     const { toolId } = parsed.data;
-    const adapter = getSessionAdapter(toolId);
+    const adapter = registry.getSessionAdapter(toolId);
     if (!adapter) {
       // 不支持会话的能力被明确标记：返回声明，而不是静默 404 或空入口
       res.status(409).json({
@@ -122,7 +126,7 @@ export function createSessionRouter(deps: SessionApiDeps): express.Router {
     // lastTurn = 最新一轮（无论是否终态）：轮询终态靠它；liveTurn 只表示“进行中”。
     const last = turns.length > 0 ? (turns[turns.length - 1] ?? null) : null;
 
-    const adapter = getSessionAdapter(session.toolId);
+    const adapter = registry.getSessionAdapter(session.toolId);
     res.json({
       session: sessionToJson(session),
       capabilities: adapter ? capabilitiesOf(adapter) : null,
@@ -162,7 +166,7 @@ export function createSessionRouter(deps: SessionApiDeps): express.Router {
     }
     const { message, idempotencyKey } = parsed.data;
 
-    const adapter = getSessionAdapter(session.toolId);
+    const adapter = registry.getSessionAdapter(session.toolId);
     if (!adapter) {
       res.status(409).json({
         error: "SESSIONS_NOT_SUPPORTED",

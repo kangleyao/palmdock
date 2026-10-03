@@ -16,7 +16,9 @@
 
 > 本仓库是**底座**，不是完整的远程 Coding Agent 产品：公共层（页面、通信、鉴权、会话与任务机制）是成品，
 > 目标端的差异全部落在 `src/adapters/`。仓库内附示例端：一次性任务端（文本统计 / 目录清单 / 端砚 MCP 只读查询）
-> 与会话端（本地演示助手 `fake-ai`、按 DSH `/api` 协议接入真实 DeepSeek Harness 的 `dsh-agent`）。
+> 与会话端（按 DSH `/api` 协议接入真实 DeepSeek Harness 的 `dsh-agent`）；另有本地演示助手 `fake-ai`，
+> **它不在产品端清单里**（`/api/tools` 不返回、手机页面与工具页都看不到），仅作测试替身与适配参照样例，
+> 由测试环境显式注册进自己的注册表（见下「为什么仓库里有一个演示助手（fake-ai）」）。
 > 接你自己的端只需新增一个适配器，见 `ADAPTERS.md`。
 
 ## 技术选型
@@ -47,15 +49,15 @@
 | `src/adapters/inkstone-mcp.ts` | 工具 C：书生·端砚 MCP stdio 工具清单（外部程序，只读元数据级别） |
 | `src/adapters/inkstone-mcp-stdio.ts` | 两个 inkstone 适配器共用的 MCP stdio 会话（路径/JSON-RPC/子进程管控） |
 | `src/adapters/inkstone-biorxiv-categories.ts` | 工具 D：端砚 MCP 工具调用——bioRxiv 类目（固定 server+tool，空参数只读查询） |
-| `src/adapters/fake-ai.ts` | 工具 E（会话形态）：假 AI 演示端（spawn 本地脚本，协议翻译） |
-| `src/adapters/dsh-agent.ts` | 工具 F（会话形态）：**真实公开协议**适配器——按 DeepSeek Harness 自身声明的 `/api` 协议接入真实 dsh web（需环境变量 `DSH_BASE_URL`，详见 `ADAPTERS.md`） |
+| `src/adapters/fake-ai.ts` | **不在产品端清单中**：内部测试替身与适配参照样例（会话形态；spawn 本地脚本，协议翻译；由测试环境显式注册） |
+| `src/adapters/dsh-agent.ts` | 工具 E（会话形态）：**真实公开协议**适配器——按 DeepSeek Harness 自身声明的 `/api` 协议接入真实 dsh web（需环境变量 `DSH_BASE_URL`，详见 `ADAPTERS.md`） |
 | `src/session-runner.ts` | 会话轮次运行器（第二层）：ask 挂起/恢复、AbortSignal dispose、中断恢复 |
 | `src/session-api.ts` | 会话 HTTP API：创建会话 / 发消息（幂等）/ 回答（幂等）/ 重连视图 / SSE 流 |
 | `src/turn-bus.ts` | 轮次变更总线：持久层事务提交后通知订阅者（推流触发点） |
 | `src/session-stream.ts` | 会话 SSE 推流中心：hello/change 快照 + sinceSeq 续传 + 心跳 + 关闭清理 |
 | `src/session-state.ts` | 轮次状态机（streaming / awaiting_answer / answered / 终态） |
 | `src/result-guard.ts` | 结果序列化与体积截断（任务与轮次共用同一规则） |
-| `fake-ai/agent.js` | 演示助手（fake-ai）本地脚本（纯本地、无网络、无密钥、行为固定） |
+| `fake-ai/agent.js` | 演示助手（fake-ai）本地脚本（纯本地、无网络、无密钥、行为固定；**不在产品端清单中，仅供测试**） |
 | `fake-dsh/server.js` | dsh-agent 的可控“假协议端”测试替身（文档化 DSH `/api` 协议的最小实现，仅供测试） |
 | `public/session.html` | 会话主页（应用入口）：未授权配对卡；列表视图（会话列表 + 新建会话）+ 聊天详情（消息输入 + SSE 流式事件 + 二选一问答 + 通知行 + 历史轮次） |
 | `public/tools.html` | 工具页（二级）：一次性任务端分区，按能力展示入口 |
@@ -105,12 +107,16 @@
 - **本地缓存秒开**：会话内容按会话 id 缓存在浏览器 localStorage（`agb_sess_<id>`，带 schema 版本号，
   不含 token）；再次打开先用缓存**立刻渲染**、顶部短暂标注"更新中…"，再向服务器刷新；
   断网时明确显示“离线，显示的是上次内容”；提问卡缓存为“待回答”时，刷新确认后立即更正。
-演示助手（fake-ai）固定行为：收消息 → 3 段输出 → 二选一提问 → 回答后 2 段收尾 → 结果；
+演示助手（fake-ai，**不在产品端清单中**、仅测试环境可见）固定行为：收消息 → 3 段输出 → 二选一提问 → 回答后 2 段收尾 → 结果；
 消息为“失败”或“fail”时确定性地失败（输出一段后 fatal，失败轮次带 `error` 证据、无结果）。
 
 ### 为什么仓库里有一个演示助手（fake-ai）
 
-`fake-ai` 是会话层的**量具**，不是冒充真实模型的假 AI。它存在有三个用途：
+`fake-ai` 是会话层的**量具**，不是冒充真实模型的假 AI。**它不在产品端清单里**：
+`/api/tools` 不返回它，手机页面（新建会话的端下拉）与工具页都看不到它——产品端共 5 个
+（text-stats、dir-listing、inkstone-mcp、inkstone-biorxiv-categories、dsh-agent）。
+它作为**测试替身与适配参照样例**保留在仓库，测试环境（`tests/helpers.ts`）显式把它
+注册进自己的注册表，产品装配（`src/index.ts` 的默认注册表）不受影响。它存在有三个用途：
 
 1. **测试替身**：真实模型的回答不确定、无法断言；`fake-ai` 行为完全固定（见上一段），
    让状态机、提问-回答幂等、断线 sinceSeq 续传、并发 409、失败流程都能被确定性验证——
@@ -119,12 +125,11 @@
 2. **适配参照样例**：`src/adapters/fake-ai.ts` + `fake-ai/agent.js` 是最小、完整、可跑的
    会话端实现（适配器只做协议翻译与子进程管控）；照它就知道一个会话端长什么样、
    `runTurn` 的 `emit`/`ask` 契约如何落地。
-3. **零密钥离线演示**：纯本地脚本（不联网、无密钥、不读写用户文件），装好底座即可
-   跑完整会话流程：分段流式输出 → 二选一提问 → 手机回答 → 结果。
+3. **零密钥离线验证**：纯本地脚本（不联网、无密钥、不读写用户文件），测试环境装好即可
+   跑完整会话流程：分段流式输出 → 二选一提问 → 回答 → 结果。
 
 它不是真实模型，也不代表底座只有假端——仓库另有按 DSH 公开 `/api` 协议接入真实
-DeepSeek Harness 的 `dsh-agent` 与若干一次性任务端；界面上它排在端清单最后，文案为
-「体验完整会话流程的演示端：分段输出、向你提问、按回答生成结果（纯本地运行，不联网、无密钥）」。
+DeepSeek Harness 的 `dsh-agent` 与若干一次性任务端。
 
 ### 任务状态与边界语义（这是本底座的核心约定）
 
